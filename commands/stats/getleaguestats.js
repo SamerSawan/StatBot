@@ -4,12 +4,16 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('getleaguestats')
-        .setDescription(`provides information about the user's league of legends stats, including rank and winrate.`),
+        .setDescription(`provides information about the user's league of legends stats, including rank and winrate.`)
+        .addStringOption(option =>
+            option.setName('username')
+                .setDescription('the username to look up')
+                .setRequired(true)),
     async execute(interaction) {
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
         await interaction.deferReply({ ephemeral: false });
-        const username = "tom1oka"
+        const username = interaction.options.getString('username');
         await page.goto(`https://www.op.gg/summoners/na/${username}`)
         await page.$eval(".css-4e9tnt.eapd0am1", elem => elem.click());
 
@@ -20,7 +24,6 @@ module.exports = {
         const winlose = await winlosecontainer.$eval('.win-lose', elem => elem.textContent);
         const ratio = await winlosecontainer.$eval('.ratio', elem => elem.textContent);
 
-        //const profileicon = await page.$$eval('.profile-icon img[src]', img => img.getAttr('src'));
         const icondiv = await page.$('.profile-icon');
         const profileicon = await icondiv.$eval('img', elem => elem.getAttribute('src'));
         console.log(profileicon);
@@ -41,11 +44,7 @@ module.exports = {
             .setTimestamp()
             .setFooter({ text: 'Bot by Penitent#0001; Reach out to report bugs'});
 
-        //const rank= $('.tier').text();
-        //const winlose = $('.win-lose-container').find("win-lose").text();
-        //const ratio = $('win-lose-container').find('.ratio').text();
-        // League stats for ${username}\n RANK: ${rank}\n WIN-LOSS: ${winlose}\n WINRATE: ${ratio}
-        //await interaction.editReply(`RANK: ${rank} WIN-LOSE: ${winlose} RATIO: ${ratio}`)
+        
         await interaction.editReply({embeds: [embed]});
     }
 }

@@ -10,25 +10,59 @@ module.exports = {
                 .setDescription('the username to look up')
                 .setRequired(true)),
     async execute(interaction) {
+        // puppeteer paramets to begin webscraping
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
+
+        // defer reply due to time taken for puppeteer to hit the update button on OP.GG
         await interaction.deferReply({ ephemeral: false });
+
+        // variable declarations
         const username = interaction.options.getString('username');
-        await page.goto(`https://www.op.gg/summoners/na/${username}`)
-        await page.$eval(".css-4e9tnt.eapd0am1", elem => elem.click());
+        let rank = 'N/A';
+        let winlose = 'N/A N/A';
+        let ratio = 'N/A';
+        let profileicon = null;
 
-        let rank = await page.$eval('.tier', elem => elem.textContent);
-        rank = rank.charAt(0).toUpperCase() + rank.slice(1);
+        // push the update button for updated stats
+        try {
+            await page.goto(`https://www.op.gg/summoners/na/${username}`);
+            await page.$eval(".css-4e9tnt.eapd0am1", elem => elem.click());
+        } catch {
+            await interaction.editReply("User does not exist or update button on cooldown");
+            return;
+        }
         
-        const winlosecontainer = await page.$('.win-lose-container');
-        const winlose = await winlosecontainer.$eval('.win-lose', elem => elem.textContent);
-        const ratio = await winlosecontainer.$eval('.ratio', elem => elem.textContent);
-
-        const icondiv = await page.$('.profile-icon');
-        const profileicon = await icondiv.$eval('img', elem => elem.getAttribute('src'));
-        console.log(profileicon);
 
 
+        
+        // try to find the rank of the player
+        try {
+            rank = await page.$eval('.tier', elem => elem.textContent);
+            rank = rank.charAt(0).toUpperCase() + rank.slice(1);
+        } catch {
+            console.log("Failed to retrieve rank");
+        }
+
+        // try to find the winloss of the player
+        try {
+            const winlosecontainer = await page.$('.win-lose-container');
+            winlose = await winlosecontainer.$eval('.win-lose', elem => elem.textContent);
+            ratio = await winlosecontainer.$eval('.ratio', elem => elem.textContent);
+        } catch {
+            console.log("Failed to retrieve win-lose");
+        }
+
+        // try to find the profile icon of the player
+        try {
+            const icondiv = await page.$('.profile-icon');
+            profileicon = await icondiv.$eval('img', elem => elem.getAttribute('src'));
+        } catch {
+            await interaction.reply("User not found");
+            return;
+        }
+
+        // build the embed to send in chat
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle(`League Stats for ${username}`)

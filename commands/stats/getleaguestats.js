@@ -24,6 +24,7 @@ module.exports = {
         let ratio = 'N/A';
         let profileicon = null;
 
+
         // push the update button for updated stats
         try {
             await page.goto(`https://www.op.gg/summoners/na/${username}`);
